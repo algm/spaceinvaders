@@ -31,6 +31,7 @@ var __hasProp = {}.hasOwnProperty,
 ;(function(window, $, undefined) {
 	"use strict";
 	var sound = new Sound();
+	var img = new Image();
 
 	//Screen
 	function Screen($el, width, height) {
@@ -85,7 +86,11 @@ var __hasProp = {}.hasOwnProperty,
 
 		if (this.objects.length) {
 			_.each(this.objects, function(obj) {
-				obj.update(this).render(ctx, this);
+				obj.update(this);
+			}, this);
+
+			_.each(this.objects, function(obj) {
+				obj.render(ctx, this);
 			}, this);
 		}
 	};
@@ -149,6 +154,8 @@ var __hasProp = {}.hasOwnProperty,
 			this.input = this.game.input;
 			this.frame = 0;
 			this.oid = _.uniqueId('object-');
+			this.spriteFrames = 0;
+			this.currentFrame = 0;
 
 			if (settings.sprite && settings.sprite.length) {
 				this.nsprites = settings.sprite.length;
@@ -171,9 +178,17 @@ var __hasProp = {}.hasOwnProperty,
 
 			if (this.settings.sprite) {
 				// draw part of spritesheet to canvas
-				var sp = this.settings.sprite[this.frame % this.nsprites] || this.settings.sprite || null;
+				var sp = this.settings.sprite[this.currentFrame];
 				var x = this.settings.posX;
 				var y = this.settings.posY;
+
+				if (this.settings.frameDuration && this.spriteFrames >= this.settings.frameDuration) {
+					this.currentFrame = this.getNextFrame();
+					sp = this.settings.sprite[this.currentFrame];
+					this.spriteFrames = 0;
+				}
+
+				this.spriteFrames++;
 
 				if (x < 0) {
 					this.settings.posX = x = 0;
@@ -191,6 +206,14 @@ var __hasProp = {}.hasOwnProperty,
 			}
 
 			return this;
+		};
+
+		GameObject.prototype.getNextFrame = function() {
+			if (this.currentFrame + 1 >= this.settings.sprite.length) {
+				return 0;
+			}
+
+			return this.currentFrame + 1;
 		};
 
 		GameObject.prototype.destroy = function() {
@@ -282,13 +305,138 @@ var __hasProp = {}.hasOwnProperty,
 
 	// -------------------
 
+	// Invader
+	var Invader = (function(_super) {
+		__extends(Invader, _super);
+
+		var rowHeight = 26,
+		    colWidth = 26;
+
+		function Invader(row, col, sprites, offset, game) {
+			var settings = {
+				posX: 10 + offset.x + col * colWidth,
+				posY: 10 + offset.y + row * rowHeight,
+				width: colWidth,
+				height: 16,
+				color: 'rgba(255,255,255, 1)',
+				sprite: sprites,
+				frameDuration: 30
+			};
+
+			this.row = row;
+			this.col = col;
+
+			return Invader.__super__.constructor.apply(this, [settings, game]);
+		}
+
+		return Invader;
+	})(GameObject);
+
+	// -------------------
+
+	// InvaderTop
+	var InvaderTop = (function(_super) {
+		__extends(InvaderTop, _super);
+
+		function InvaderTop(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 22,
+				posY: 0,
+				width: 16,
+				height: 16
+			}, {
+				img: img,
+				posX: 22,
+				posY: 16,
+				width: 16,
+				height: 16
+			}];
+
+			var offset = {
+				x: 5,
+				y: 5
+			};
+
+			return InvaderTop.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderTop;
+	})(Invader);
+
+	// -------------------
+
+	// InvaderMid
+	var InvaderMid = (function(_super) {
+		__extends(InvaderMid, _super);
+
+		function InvaderMid(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 0,
+				posY: 0,
+				width: 22,
+				height: 16
+			}, {
+				img: img,
+				posX: 0,
+				posY: 16,
+				width: 22,
+				height: 16
+			}];
+
+			var offset = {
+				x: 2,
+				y: 5
+			};
+
+			return InvaderMid.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderMid;
+	})(Invader);
+
+	// -------------------
+
+	// InvaderBottom
+	var InvaderBottom = (function(_super) {
+		__extends(InvaderBottom, _super);
+
+		function InvaderBottom(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 38,
+				posY: 0,
+				width: 24,
+				height: 16
+			}, {
+				img: img,
+				posX: 38,
+				posY: 16,
+				width: 24,
+				height: 16
+			}];
+
+			var offset = {
+				x: 1,
+				y: 5
+			};
+
+			return InvaderBottom.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderBottom;
+	})(Invader);
+
+	// -------------------
+
+
 	//Game
 	function Game($canvas, width, height) {
 		this.input = new InputHandler();
 		var _self = this;
 
 		// create all sprites from assets image
-		var img = new Image();
 		img.addEventListener("load", function() {
 			_self.screen = new Screen($canvas, width, height);
 			/*alSprite = [
@@ -309,15 +457,37 @@ var __hasProp = {}.hasOwnProperty,
 					height: 16
 				}],
 				posX: width * 0.5 - 11,
-				posY: height - 46
+				posY: height - 26
 			}, _self);
 			_self.addObject(_self.player);
+			_self.initInvaders();
 
 			_self.start();
 		});
 
 		img.src = "res/invaders.png";
 	}
+
+	Game.prototype.initInvaders = function() {
+		var i, j;
+
+		//top invaders
+		for(i = 0; i < 6; i++) {
+			for(j=0; j < 11; j++) {
+				if (i < 2) {
+					this.addObject(new InvaderTop(i, j, this));
+				}
+
+				if (i >= 2 && i < 4) {
+					this.addObject(new InvaderMid(i, j, this));
+				}
+
+				if (i >= 4) {
+					this.addObject(new InvaderBottom(i, j, this));
+				}
+			}
+		}
+	};
 
 	Game.prototype.start = function() {
 		this.screen.clock();
@@ -327,7 +497,6 @@ var __hasProp = {}.hasOwnProperty,
 
 	Game.prototype.addObject = function(obj) {
 		this.screen.objects.push(obj);
-		console.log(this.screen.objects.length);
 
 		return this;
 	};

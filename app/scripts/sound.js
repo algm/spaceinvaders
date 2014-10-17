@@ -1,5 +1,5 @@
 ;(function(window, $, undefined) {
-	"use strict";
+	'use strict';
 
 	function Sound() {
 		this.loaded = $.Deferred();
@@ -33,7 +33,7 @@
 		});
 
 		return this.loaded;
-	}
+	};
 
 	Sound.prototype.play = function(sound) {
 		if (typeof this.sounds[sound] !== 'undefined') {
@@ -41,7 +41,7 @@
 		}
 
 		return this;
-	}
+	};
 
 	window.Sound = Sound;
 })(window, jQuery);
