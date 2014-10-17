@@ -1,9 +1,13 @@
+'use strict';
+
 //Polyfills
 var __hasProp = {}.hasOwnProperty,
 	__extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 //REQUEST ANIMATION FRAME POLYFILL
 ;(function() {
+	'use strict';
+
     var lastTime = 0;
     var vendors = ['webkit', 'moz'];
     for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
@@ -12,7 +16,7 @@ var __hasProp = {}.hasOwnProperty,
           window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
 
-    if (!window.requestAnimationFrame)
+    if (!window.requestAnimationFrame) {
         window.requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -21,17 +25,29 @@ var __hasProp = {}.hasOwnProperty,
             lastTime = currTime + timeToCall;
             return id;
         };
+    }
 
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
+    if (!window.cancelAnimationFrame) {
+    	window.cancelAnimationFrame = function(id) {
             clearTimeout(id);
         };
+    }
+
 }());
 
 ;(function(window, $, undefined) {
-	"use strict";
+	'use strict';
+
 	var sound = new Sound();
 	var img = new Image();
+
+	/**
+	 * Returns a random integer between min (inclusive) and max (inclusive)
+	 * Using Math.round() will give you a non-uniform distribution!
+	 */
+	function getRandomInt(min, max) {
+	    return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
 
 	//Screen
 	function Screen($el, width, height) {
@@ -320,14 +336,62 @@ var __hasProp = {}.hasOwnProperty,
 				height: 16,
 				color: 'rgba(255,255,255, 1)',
 				sprite: sprites,
-				frameDuration: 30
+				frameDuration: 40
 			};
+
+			this.offset = offset;
 
 			this.row = row;
 			this.col = col;
 
+			this.speed = colWidth / 75;
+
 			return Invader.__super__.constructor.apply(this, [settings, game]);
 		}
+
+		Invader.prototype.onUpdate = function(scr) {
+			if (this.canShoot()) {
+				this.fire();
+			}
+
+			if (this.shouldTurn(scr)) {
+				this.speed = -this.speed;
+			}
+
+			this.settings.posX += this.speed;
+		};
+
+		Invader.prototype.fire = function() {
+			console.log('alien firing');
+			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2), this.settings.posY + this.settings.height + 1, 4, 'down', this.game));
+			return this;
+		};
+
+		Invader.prototype.canShoot = function() {
+			var hasInvaderAtBottom;
+
+			hasInvaderAtBottom = this.game.findObject(function(obj) {
+				if (obj instanceof Invader) {
+					return obj.row > this.row && obj.col === this.col;
+				}
+
+				return false;
+			}, this);
+
+			return !hasInvaderAtBottom && Math.random() >= 0.997;
+		};
+
+		Invader.prototype.shouldTurn = function(scr) {
+			var rightBorder = colWidth + this.settings.posX - this.offset.x;
+			var colOffset = 11 - this.col;
+			var leftBorder = this.settings.posX - this.offset.x;
+
+			if (this.speed < 0) {
+				return leftBorder - colWidth * this.col <= 0;
+			}
+
+			return rightBorder - colWidth + colWidth * colOffset >= scr.width;
+		};
 
 		return Invader;
 	})(GameObject);
@@ -507,6 +571,10 @@ var __hasProp = {}.hasOwnProperty,
 		});
 
 		return this;
+	};
+
+	Game.prototype.findObject = function(testfunc, context) {
+		return _.find(this.screen.objects, testfunc, context || this);
 	};
 
 	// -------------------
