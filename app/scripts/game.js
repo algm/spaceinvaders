@@ -584,7 +584,9 @@ var __hasProp = {}.hasOwnProperty,
 					height: 16
 				}],
 				posX: width * 0.5 - 11,
-				posY: height - 26
+				posY: height - 26,
+				width: 22,
+				height: 16
 			}, _self);
 			_self.addObject(_self.player);
 			_self.initInvaders();
