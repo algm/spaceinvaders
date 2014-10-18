@@ -1,9 +1,13 @@
+'use strict';
+
 //Polyfills
 var __hasProp = {}.hasOwnProperty,
 	__extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 //REQUEST ANIMATION FRAME POLYFILL
 ;(function() {
+	'use strict';
+
     var lastTime = 0;
     var vendors = ['webkit', 'moz'];
     for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
@@ -12,7 +16,7 @@ var __hasProp = {}.hasOwnProperty,
           window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
     }
 
-    if (!window.requestAnimationFrame)
+    if (!window.requestAnimationFrame) {
         window.requestAnimationFrame = function(callback, element) {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -21,16 +25,43 @@ var __hasProp = {}.hasOwnProperty,
             lastTime = currTime + timeToCall;
             return id;
         };
+    }
 
-    if (!window.cancelAnimationFrame)
-        window.cancelAnimationFrame = function(id) {
+    if (!window.cancelAnimationFrame) {
+    	window.cancelAnimationFrame = function(id) {
             clearTimeout(id);
         };
+    }
+
 }());
 
 ;(function(window, $, undefined) {
-	"use strict";
+	'use strict';
+
 	var sound = new Sound();
+	var img = new Image();
+
+	// Helpers
+
+	/**
+	 * Returns a random integer between min (inclusive) and max (inclusive)
+	 * Using Math.round() will give you a non-uniform distribution!
+	 */
+	function getRandomInt(min, max) {
+	    return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	function isColliding(b1, b2) {
+	    return !(
+	      b1 === b2 ||
+	        b1.settings.posX + b1.settings.width <= b2.settings.posX ||
+	        b1.settings.posY + b1.settings.height <= b2.settings.posY ||
+	        b1.settings.posX >= b2.settings.posX + b2.settings.width ||
+	        b1.settings.posY >= b2.settings.posY + b2.settings.height
+	    );
+	}
+
+	// ----------------
 
 	//Screen
 	function Screen($el, width, height) {
@@ -46,6 +77,8 @@ var __hasProp = {}.hasOwnProperty,
 
 		this.height = height;
 		this.width = width;
+		this.stopped = true;
+		this.animation = null;
 	}
 
 	Screen.prototype.clock = function(callback, time) {
@@ -55,18 +88,32 @@ var __hasProp = {}.hasOwnProperty,
 
 		var _self = this;
 
-		function animate(time) {
-			var timer = window.requestAnimationFrame(animate);
+		this.stopped = false;
+
+		this.animation = function(time) {
+			var timer = window.requestAnimationFrame(_self.animation);
 
 			if (!time) {
 				time = new Date().getTime();
 			}
 
 			_self.time = time;
-			_self.update();
-		}
 
-		this.timer = animate();
+			if (!_self.stopped) {
+				_self.update();
+				if (typeof _self.onUpdate === 'function') {
+					_self.onUpdate.call(this);
+				}
+			}
+		};
+
+		this.timer = this.animation();
+
+		return this;
+	};
+
+	Screen.prototype.stop = function() {
+		this.stopped = true;
 
 		return this;
 	};
@@ -85,7 +132,11 @@ var __hasProp = {}.hasOwnProperty,
 
 		if (this.objects.length) {
 			_.each(this.objects, function(obj) {
-				obj.update(this).render(ctx, this);
+				obj.update(this);
+			}, this);
+
+			_.each(this.objects, function(obj) {
+				obj.render(ctx, this);
 			}, this);
 		}
 	};
@@ -149,6 +200,8 @@ var __hasProp = {}.hasOwnProperty,
 			this.input = this.game.input;
 			this.frame = 0;
 			this.oid = _.uniqueId('object-');
+			this.spriteFrames = 0;
+			this.currentFrame = 0;
 
 			if (settings.sprite && settings.sprite.length) {
 				this.nsprites = settings.sprite.length;
@@ -171,9 +224,17 @@ var __hasProp = {}.hasOwnProperty,
 
 			if (this.settings.sprite) {
 				// draw part of spritesheet to canvas
-				var sp = this.settings.sprite[this.frame % this.nsprites] || this.settings.sprite || null;
+				var sp = this.settings.sprite[this.currentFrame];
 				var x = this.settings.posX;
 				var y = this.settings.posY;
+
+				if (this.settings.frameDuration && this.spriteFrames >= this.settings.frameDuration) {
+					this.currentFrame = this.getNextFrame();
+					sp = this.settings.sprite[this.currentFrame];
+					this.spriteFrames = 0;
+				}
+
+				this.spriteFrames++;
 
 				if (x < 0) {
 					this.settings.posX = x = 0;
@@ -193,12 +254,24 @@ var __hasProp = {}.hasOwnProperty,
 			return this;
 		};
 
+		GameObject.prototype.getNextFrame = function() {
+			if (this.currentFrame + 1 >= this.settings.sprite.length) {
+				return 0;
+			}
+
+			return this.currentFrame + 1;
+		};
+
 		GameObject.prototype.destroy = function() {
 			if (typeof this.onDestroy == 'function') {
 				this.onDestroy.call(this);
 			}
 
 			this.game.removeObject(this.oid);
+		};
+
+		GameObject.prototype.hit = function() {
+			this.destroy();
 		};
 
 		return GameObject;
@@ -231,8 +304,16 @@ var __hasProp = {}.hasOwnProperty,
 		};
 
 		Player.prototype.fire = function() {
-			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2), this.settings.posY - 1, 10, 'up', this.game));
+			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2) - 1, this.settings.posY - 1, 10, 'up', this.game));
 			sound.play('shoot');
+
+			return this;
+		};
+
+		Player.prototype.hit = function() {
+			this.destroy();
+			sound.play('explosion');
+			this.game.stop();
 
 			return this;
 		};
@@ -249,7 +330,7 @@ var __hasProp = {}.hasOwnProperty,
 
 		function Bullet(posx, posy, velocity, direction, game) {
 			var settings = {
-				posX: posx + 4.5,
+				posX: posx,
 				posY: posy,
 				width: 3,
 				height: 6,
@@ -274,6 +355,21 @@ var __hasProp = {}.hasOwnProperty,
 			if (this.settings.posY < 0 || this.settings.posY > scr.height) {
 				this.destroy();
 			}
+
+			this.checkCollision();
+		};
+
+		Bullet.prototype.checkCollision = function() {
+			var collided = this.game.findObject(function(obj) {
+				return !(obj instanceof Bullet) && isColliding(this, obj);
+			}, this);
+
+			if (collided) {
+				collided.hit();
+				this.destroy();
+			}
+
+			return this;
 		};
 
 		return Bullet;
@@ -282,21 +378,199 @@ var __hasProp = {}.hasOwnProperty,
 
 	// -------------------
 
+	// Invader
+	var Invader = (function(_super) {
+		__extends(Invader, _super);
+
+		var rowHeight = 26,
+		    colWidth = 26;
+
+		function Invader(row, col, sprites, offset, game) {
+			var settings = {
+				posX: 10 + offset.x + col * colWidth,
+				posY: 10 + offset.y + row * rowHeight,
+				width: colWidth,
+				height: 16,
+				color: 'rgba(255,255,255, 1)',
+				sprite: sprites,
+				frameDuration: 40
+			};
+
+			this.offset = offset;
+
+			this.row = row;
+			this.col = col;
+			this.speed = colWidth / 75;
+			this.value = this.value || 100;
+
+			return Invader.__super__.constructor.apply(this, [settings, game]);
+		}
+
+		Invader.prototype.onUpdate = function(scr) {
+			if (this.canShoot()) {
+				this.fire();
+			}
+
+			if (this.shouldTurn(scr)) {
+				this.speed = -this.speed;
+			}
+
+			this.settings.posX += this.speed;
+		};
+
+		Invader.prototype.fire = function() {
+			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2) - this.speed, this.settings.posY + this.settings.height + 1, 4, 'down', this.game));
+			return this;
+		};
+
+		Invader.prototype.canShoot = function() {
+			var hasInvaderAtBottom;
+
+			hasInvaderAtBottom = this.game.findObject(function(obj) {
+				if (obj instanceof Invader) {
+					return obj.col === this.col && obj.row > this.row;
+				}
+
+				return false;
+			}, this);
+
+			return !hasInvaderAtBottom && Math.random() >= 0.997;
+		};
+
+		Invader.prototype.shouldTurn = function(scr) {
+			var rightBorder = colWidth + this.settings.posX - this.offset.x;
+			var colOffset = 11 - this.col;
+			var leftBorder = this.settings.posX - this.offset.x;
+
+			if (this.speed < 0) {
+				return leftBorder - colWidth * this.col <= 0;
+			}
+
+			return rightBorder - colWidth + colWidth * colOffset >= scr.width;
+		};
+
+		Invader.prototype.hit = function() {
+			this.game.addScore(this.value);
+			sound.play('invaderkilled');
+			this.destroy();
+
+			return this;
+		};
+
+		return Invader;
+	})(GameObject);
+
+	// -------------------
+
+	// InvaderTop
+	var InvaderTop = (function(_super) {
+		__extends(InvaderTop, _super);
+
+		function InvaderTop(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 22,
+				posY: 0,
+				width: 16,
+				height: 16
+			}, {
+				img: img,
+				posX: 22,
+				posY: 16,
+				width: 16,
+				height: 16
+			}];
+
+			var offset = {
+				x: 5,
+				y: 5
+			};
+
+			return InvaderTop.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderTop;
+	})(Invader);
+
+	// -------------------
+
+	// InvaderMid
+	var InvaderMid = (function(_super) {
+		__extends(InvaderMid, _super);
+
+		function InvaderMid(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 0,
+				posY: 0,
+				width: 22,
+				height: 16
+			}, {
+				img: img,
+				posX: 0,
+				posY: 16,
+				width: 22,
+				height: 16
+			}];
+
+			var offset = {
+				x: 2,
+				y: 5
+			};
+
+			return InvaderMid.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderMid;
+	})(Invader);
+
+	// -------------------
+
+	// InvaderBottom
+	var InvaderBottom = (function(_super) {
+		__extends(InvaderBottom, _super);
+
+		function InvaderBottom(row, col, game) {
+			var sprites = [{
+				img: img,
+				posX: 38,
+				posY: 0,
+				width: 24,
+				height: 16
+			}, {
+				img: img,
+				posX: 38,
+				posY: 16,
+				width: 24,
+				height: 16
+			}];
+
+			var offset = {
+				x: 1,
+				y: 5
+			};
+
+			return InvaderBottom.__super__.constructor.apply(this, [row, col, sprites, offset, game]);
+		}
+
+		return InvaderBottom;
+	})(Invader);
+
+	// -------------------
+
+
 	//Game
 	function Game($canvas, width, height) {
 		this.input = new InputHandler();
+		this.score = 0;
 		var _self = this;
 
+		this.invaderCount = 0;
+
 		// create all sprites from assets image
-		var img = new Image();
 		img.addEventListener("load", function() {
 			_self.screen = new Screen($canvas, width, height);
-			/*alSprite = [
-				[new Srite(this,  0, 0, 22, 16), new Sprite(this,  0, 16, 22, 16)],
-				[new Sprite(this, 22, 0, 16, 16), new Sprite(this, 22, 16, 16, 16)],
-				[new Sprite(this, 38, 0, 24, 16), new Sprite(this, 38, 16, 24, 16)]
-			];
-			taSprite = new Sprite(this, 62, 0, 22, 16);
+			/*
 			ciSprite = new Sprite(this, 84, 8, 36, 24);
 			*/
 
@@ -309,9 +583,12 @@ var __hasProp = {}.hasOwnProperty,
 					height: 16
 				}],
 				posX: width * 0.5 - 11,
-				posY: height - 46
+				posY: height - 26,
+				width: 22,
+				height: 16
 			}, _self);
 			_self.addObject(_self.player);
+			_self.initInvaders();
 
 			_self.start();
 		});
@@ -319,23 +596,70 @@ var __hasProp = {}.hasOwnProperty,
 		img.src = "res/invaders.png";
 	}
 
+	Game.prototype.initInvaders = function() {
+		var i, j;
+
+		//top invaders
+		for(i = 0; i < 6; i++) {
+			for(j=0; j < 11; j++) {
+				if (i < 2) {
+					this.addObject(new InvaderTop(i, j, this));
+				}
+
+				if (i >= 2 && i < 4) {
+					this.addObject(new InvaderMid(i, j, this));
+				}
+
+				if (i >= 4) {
+					this.addObject(new InvaderBottom(i, j, this));
+				}
+
+				this.invaderCount++;
+			}
+		}
+	};
+
 	Game.prototype.start = function() {
 		this.screen.clock();
 
 		return this;
 	};
 
+	Game.prototype.stop = function() {
+		this.screen.stop();
+
+		return this;
+	};
+
 	Game.prototype.addObject = function(obj) {
 		this.screen.objects.push(obj);
-		console.log(this.screen.objects.length);
 
 		return this;
 	};
 
 	Game.prototype.removeObject = function(id) {
 		this.screen.objects = _.reject(this.screen.objects, function(obj) {
-			return obj.oid == id;
+			return obj.oid === id;
 		});
+
+		return this;
+	};
+
+	Game.prototype.findObject = function(testfunc, context) {
+		return _.find(this.screen.objects, testfunc, context || this);
+	};
+
+	Game.prototype.addScore = function(score) {
+		this.score += score;
+
+		if (typeof this.afterScore === 'function') {
+			this.afterScore.call(this, this.score);
+		}
+		this.invaderCount--;
+
+		if (!this.invaderCount) {
+			this.stop();
+		}
 
 		return this;
 	};
@@ -347,7 +671,12 @@ var __hasProp = {}.hasOwnProperty,
 	$(function() {
 		sound.load().done(function() {
 			var $canvas = $('#canvas');
+			var $score = $('#score');
 			var game = new Game($canvas, $canvas.width(), $canvas.height());
+
+			game.afterScore = function(score) {
+				$score.text(score);
+			};
 		});
 	});
 })(window, jQuery);
