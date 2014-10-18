@@ -101,6 +101,9 @@ var __hasProp = {}.hasOwnProperty,
 
 			if (!_self.stopped) {
 				_self.update();
+				if (typeof _self.onUpdate === 'function') {
+					_self.onUpdate.call(this);
+				}
 			}
 		};
 
@@ -301,7 +304,7 @@ var __hasProp = {}.hasOwnProperty,
 		};
 
 		Player.prototype.fire = function() {
-			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2), this.settings.posY - 1, 10, 'up', this.game));
+			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2) - 1, this.settings.posY - 1, 10, 'up', this.game));
 			sound.play('shoot');
 
 			return this;
@@ -309,7 +312,7 @@ var __hasProp = {}.hasOwnProperty,
 
 		Player.prototype.hit = function() {
 			this.destroy();
-
+			sound.play('explosion');
 			this.game.stop();
 
 			return this;
@@ -327,7 +330,7 @@ var __hasProp = {}.hasOwnProperty,
 
 		function Bullet(posx, posy, velocity, direction, game) {
 			var settings = {
-				posX: posx + 4.5,
+				posX: posx,
 				posY: posy,
 				width: 3,
 				height: 6,
@@ -362,7 +365,6 @@ var __hasProp = {}.hasOwnProperty,
 			}, this);
 
 			if (collided) {
-				console.log('hit!');
 				collided.hit();
 				this.destroy();
 			}
@@ -417,7 +419,6 @@ var __hasProp = {}.hasOwnProperty,
 		};
 
 		Invader.prototype.fire = function() {
-			console.log('alien firing');
 			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2) - this.speed, this.settings.posY + this.settings.height + 1, 4, 'down', this.game));
 			return this;
 		};
@@ -450,6 +451,7 @@ var __hasProp = {}.hasOwnProperty,
 
 		Invader.prototype.hit = function() {
 			this.game.addScore(this.value);
+			sound.play('invaderkilled');
 			this.destroy();
 
 			return this;
@@ -563,15 +565,12 @@ var __hasProp = {}.hasOwnProperty,
 		this.score = 0;
 		var _self = this;
 
+		this.invaderCount = 0;
+
 		// create all sprites from assets image
 		img.addEventListener("load", function() {
 			_self.screen = new Screen($canvas, width, height);
-			/*alSprite = [
-				[new Srite(this,  0, 0, 22, 16), new Sprite(this,  0, 16, 22, 16)],
-				[new Sprite(this, 22, 0, 16, 16), new Sprite(this, 22, 16, 16, 16)],
-				[new Sprite(this, 38, 0, 24, 16), new Sprite(this, 38, 16, 24, 16)]
-			];
-			taSprite = new Sprite(this, 62, 0, 22, 16);
+			/*
 			ciSprite = new Sprite(this, 84, 8, 36, 24);
 			*/
 
@@ -614,6 +613,8 @@ var __hasProp = {}.hasOwnProperty,
 				if (i >= 4) {
 					this.addObject(new InvaderBottom(i, j, this));
 				}
+
+				this.invaderCount++;
 			}
 		}
 	};
@@ -638,7 +639,7 @@ var __hasProp = {}.hasOwnProperty,
 
 	Game.prototype.removeObject = function(id) {
 		this.screen.objects = _.reject(this.screen.objects, function(obj) {
-			return obj.oid == id;
+			return obj.oid === id;
 		});
 
 		return this;
@@ -651,8 +652,13 @@ var __hasProp = {}.hasOwnProperty,
 	Game.prototype.addScore = function(score) {
 		this.score += score;
 
-		if (typeof this.afterScore == 'function') {
+		if (typeof this.afterScore === 'function') {
 			this.afterScore.call(this, this.score);
+		}
+		this.invaderCount--;
+
+		if (!this.invaderCount) {
+			this.stop();
 		}
 
 		return this;
