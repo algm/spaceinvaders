@@ -41,6 +41,8 @@ var __hasProp = {}.hasOwnProperty,
 	var sound = new Sound();
 	var img = new Image();
 
+	// Helpers
+
 	/**
 	 * Returns a random integer between min (inclusive) and max (inclusive)
 	 * Using Math.round() will give you a non-uniform distribution!
@@ -48,6 +50,18 @@ var __hasProp = {}.hasOwnProperty,
 	function getRandomInt(min, max) {
 	    return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
+
+	function isColliding(b1, b2) {
+	    return !(
+	      b1 === b2 ||
+	        b1.settings.posX + b1.settings.width <= b2.settings.posX ||
+	        b1.settings.posY + b1.settings.height <= b2.settings.posY ||
+	        b1.settings.posX >= b2.settings.posX + b2.settings.width ||
+	        b1.settings.posY >= b2.settings.posY + b2.settings.height
+	    );
+	}
+
+	// ----------------
 
 	//Screen
 	function Screen($el, width, height) {
@@ -63,6 +77,8 @@ var __hasProp = {}.hasOwnProperty,
 
 		this.height = height;
 		this.width = width;
+		this.stopped = true;
+		this.animation = null;
 	}
 
 	Screen.prototype.clock = function(callback, time) {
@@ -72,18 +88,29 @@ var __hasProp = {}.hasOwnProperty,
 
 		var _self = this;
 
-		function animate(time) {
-			var timer = window.requestAnimationFrame(animate);
+		this.stopped = false;
+
+		this.animation = function(time) {
+			var timer = window.requestAnimationFrame(_self.animation);
 
 			if (!time) {
 				time = new Date().getTime();
 			}
 
 			_self.time = time;
-			_self.update();
-		}
 
-		this.timer = animate();
+			if (!_self.stopped) {
+				_self.update();
+			}
+		};
+
+		this.timer = this.animation();
+
+		return this;
+	};
+
+	Screen.prototype.stop = function() {
+		this.stopped = true;
 
 		return this;
 	};
@@ -240,6 +267,10 @@ var __hasProp = {}.hasOwnProperty,
 			this.game.removeObject(this.oid);
 		};
 
+		GameObject.prototype.hit = function() {
+			this.destroy();
+		};
+
 		return GameObject;
 	})();
 
@@ -272,6 +303,14 @@ var __hasProp = {}.hasOwnProperty,
 		Player.prototype.fire = function() {
 			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2), this.settings.posY - 1, 10, 'up', this.game));
 			sound.play('shoot');
+
+			return this;
+		};
+
+		Player.prototype.hit = function() {
+			this.destroy();
+
+			this.game.stop();
 
 			return this;
 		};
@@ -313,6 +352,22 @@ var __hasProp = {}.hasOwnProperty,
 			if (this.settings.posY < 0 || this.settings.posY > scr.height) {
 				this.destroy();
 			}
+
+			this.checkCollision();
+		};
+
+		Bullet.prototype.checkCollision = function() {
+			var collided = this.game.findObject(function(obj) {
+				return !(obj instanceof Bullet) && isColliding(this, obj);
+			}, this);
+
+			if (collided) {
+				console.log('hit!');
+				collided.hit();
+				this.destroy();
+			}
+
+			return this;
 		};
 
 		return Bullet;
@@ -343,8 +398,8 @@ var __hasProp = {}.hasOwnProperty,
 
 			this.row = row;
 			this.col = col;
-
 			this.speed = colWidth / 75;
+			this.value = this.value || 100;
 
 			return Invader.__super__.constructor.apply(this, [settings, game]);
 		}
@@ -363,7 +418,7 @@ var __hasProp = {}.hasOwnProperty,
 
 		Invader.prototype.fire = function() {
 			console.log('alien firing');
-			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2), this.settings.posY + this.settings.height + 1, 4, 'down', this.game));
+			this.game.addObject(new Bullet(this.settings.posX + (this.settings.width / 2) - this.speed, this.settings.posY + this.settings.height + 1, 4, 'down', this.game));
 			return this;
 		};
 
@@ -372,7 +427,7 @@ var __hasProp = {}.hasOwnProperty,
 
 			hasInvaderAtBottom = this.game.findObject(function(obj) {
 				if (obj instanceof Invader) {
-					return obj.row > this.row && obj.col === this.col;
+					return obj.col === this.col && obj.row > this.row;
 				}
 
 				return false;
@@ -391,6 +446,13 @@ var __hasProp = {}.hasOwnProperty,
 			}
 
 			return rightBorder - colWidth + colWidth * colOffset >= scr.width;
+		};
+
+		Invader.prototype.hit = function() {
+			this.game.addScore(this.value);
+			this.destroy();
+
+			return this;
 		};
 
 		return Invader;
@@ -498,6 +560,7 @@ var __hasProp = {}.hasOwnProperty,
 	//Game
 	function Game($canvas, width, height) {
 		this.input = new InputHandler();
+		this.score = 0;
 		var _self = this;
 
 		// create all sprites from assets image
@@ -559,6 +622,12 @@ var __hasProp = {}.hasOwnProperty,
 		return this;
 	};
 
+	Game.prototype.stop = function() {
+		this.screen.stop();
+
+		return this;
+	};
+
 	Game.prototype.addObject = function(obj) {
 		this.screen.objects.push(obj);
 
@@ -577,6 +646,16 @@ var __hasProp = {}.hasOwnProperty,
 		return _.find(this.screen.objects, testfunc, context || this);
 	};
 
+	Game.prototype.addScore = function(score) {
+		this.score += score;
+
+		if (typeof this.afterScore == 'function') {
+			this.afterScore.call(this, this.score);
+		}
+
+		return this;
+	};
+
 	// -------------------
 
 
@@ -584,7 +663,12 @@ var __hasProp = {}.hasOwnProperty,
 	$(function() {
 		sound.load().done(function() {
 			var $canvas = $('#canvas');
+			var $score = $('#score');
 			var game = new Game($canvas, $canvas.width(), $canvas.height());
+
+			game.afterScore = function(score) {
+				$score.text(score);
+			};
 		});
 	});
 })(window, jQuery);
