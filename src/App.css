@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #333;
+}
+
+.root {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  display: flex;
+
+}
+
+.app {
+  width: 100%;
+  display: flex;
+}
+
+canvas {
+  width: 100%;
+}
