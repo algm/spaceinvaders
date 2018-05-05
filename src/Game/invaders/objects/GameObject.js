@@ -1,3 +1,5 @@
+import uniqueid from 'uniqueid';
+
 function getWidthWithProportions(objectWidth, screenWidth) {
   const originalWidth = 350;
 
@@ -14,8 +16,11 @@ function computePositionFromPct(positionPct, size) {
   return Math.floor(positionPct * size / 100);
 }
 
+const uq = uniqueid("obj-");
+
 export default class GameObject {
-  constructor(screen, settings = {}) {
+  constructor(game, screen, settings = {}) {
+    this.game = game;
     this.screen = screen;
     this.settings = Object.assign(
       {
@@ -27,6 +32,18 @@ export default class GameObject {
       },
       settings
     );
+
+    this.oid = uq();
+  }
+
+  destroy() {
+    this.game.removeObject(this);
+
+    if (this.onDestroy === 'function') {
+      this.onDestroy();
+    }
+
+    return this;
   }
 
   render() {

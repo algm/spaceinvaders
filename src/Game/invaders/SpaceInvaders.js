@@ -6,19 +6,29 @@ export default class SpaceInvaders {
     this.canvas = canvas;
     this.score = 0;
     this.screen = new Screen(canvas);
-    this.objects = [];
+    this.objects = {};
 
     this.initialize();
   }
 
   initialize() {
-    this.objects.push(new Player(this.screen));
+    this.addObject(new Player(this, this.screen));
 
     this.screen.clock(this.render.bind(this));
   }
 
-  render(screen) {
-    for (let obj of this.objects) {
+  addObject(obj) {
+    this.objects[obj.oid] = obj;
+  }
+
+  removeObject(obj) {
+    const id = obj.oid;
+
+    delete this.objects[id];
+  }
+
+  render() {
+    for (let obj of Object.values(this.objects)) {
       obj.render();
     }
   }
