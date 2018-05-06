@@ -12,7 +12,20 @@ export default class Bullet extends GameObject {
     this.direction = direction;
   }
 
+  checkTargets() {
+    let found = this.game.findObject((obj) => {
+      return this.isCollidingWith(obj);
+    });
+
+    if (found) {
+      found.destroy();
+      this.destroy();
+    }
+  }
+
   onUpdate() {
+    this.checkTargets();
+
     if (this.direction === "down") {
       this.settings.y += this.settings.velocity;
     }

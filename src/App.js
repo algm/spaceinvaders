@@ -7,7 +7,10 @@ class App extends Component {
     return (
       <div className="root">
         <div className="app">
-          <Game />
+          <div className="ratio"></div>
+          <div className="canvas-container">
+            <Game />
+          </div>
         </div>
       </div>
     );

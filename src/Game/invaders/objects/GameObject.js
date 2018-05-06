@@ -1,4 +1,4 @@
-import uniqueid from 'uniqueid';
+import uniqueid from "uniqueid";
 
 function getWidthWithProportions(objectWidth, screenWidth) {
   const originalWidth = 350;
@@ -36,20 +36,57 @@ export default class GameObject {
     this.oid = uq();
   }
 
-  destroy() {
-    this.game.removeObject(this);
+  getPosX() {
+    return computePositionFromPct(this.settings.x, this.screen.width);
+  }
 
-    if (this.onDestroy === 'function') {
-      this.onDestroy();
+  getPosY() {
+    return computePositionFromPct(this.settings.y, this.screen.height);
+  }
+
+  getWidth() {
+    return getWidthWithProportions(this.settings.width, this.screen.width);
+  }
+
+  getHeight() {
+    return getHeightWithProportions(this.settings.height, this.screen.height);
+  }
+
+  isCollidingWith(obj) {
+    return !(
+      this === obj ||
+      this.getPosX() + this.getWidth() <= obj.getPosX() ||
+      this.getPosY() + this.getHeight() <= obj.getPosY() ||
+      this.getPosX() >= obj.getPosX() + obj.getWidth() ||
+      this.getPosY() >= obj.getPosY() + obj.getHeight()
+    );
+  }
+
+  destroy() {
+    let callback = this.onDestroyCallback;
+
+    if (typeof callback === "function") {
+      callback(this);
     }
 
+    this.game.removeObject(this);
+
     return this;
+  }
+
+  move(offsetX = 0, offsetY = 0) {
+    this.settings.x += offsetX;
+    this.settings.y += offsetY;
+  }
+
+  onDestroy(callback) {
+    this.onDestroyCallback = callback;
   }
 
   render() {
     let ctx = this.screen.ctx;
 
-    if (typeof this.onUpdate === 'function') {
+    if (typeof this.onUpdate === "function") {
       this.onUpdate();
     }
 
@@ -57,7 +94,9 @@ export default class GameObject {
       this.settings.x = 0;
     }
 
-    const maxX = this.screen.width - getWidthWithProportions(this.settings.width, this.screen.width);
+    const maxX =
+      this.screen.width -
+      this.getWidth();
     const maxXPct = maxX * 100 / this.screen.width;
 
     if (this.settings.x > maxXPct) {
@@ -67,19 +106,19 @@ export default class GameObject {
     if (this.settings.sprite) {
       this.settings.sprite.render(
         ctx,
-        computePositionFromPct(this.settings.x, this.screen.width),
-        computePositionFromPct(this.settings.y, this.screen.height),
-        getWidthWithProportions(this.settings.width, this.screen.width),
-        getHeightWithProportions(this.settings.height, this.screen.height)
+        this.getPosX(),
+        this.getPosY(),
+        this.getWidth(),
+        this.getHeight()
       );
     } else {
       // set the current fillstyle and draw sprite
       ctx.fillStyle = this.settings.color;
       ctx.fillRect(
-        computePositionFromPct(this.settings.x, this.screen.width),
-        computePositionFromPct(this.settings.y, this.screen.height),
-        getWidthWithProportions(this.settings.width, this.screen.width),
-        getHeightWithProportions(this.settings.height, this.screen.height)
+        this.getPosX(),
+        this.getPosY(),
+        this.getWidth(),
+        this.getHeight()
       );
     }
   }

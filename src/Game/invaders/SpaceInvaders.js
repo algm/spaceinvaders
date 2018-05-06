@@ -1,5 +1,6 @@
 import Screen from './Screen';
 import Player from './objects/Player';
+import Invaders from './Invaders';
 
 export default class SpaceInvaders {
   constructor(canvas) {
@@ -12,13 +13,23 @@ export default class SpaceInvaders {
   }
 
   initialize() {
-    this.addObject(new Player(this, this.screen));
+    this.player = new Player(this, this.screen);
+    this.addObject(this.player);
 
-    this.screen.clock(this.render.bind(this));
+    this.invaders = new Invaders(this, this.screen, this.player);
+
+    this.screen.clock(() => {
+      this.invaders.update();
+      this.render();
+    });
   }
 
   addObject(obj) {
     this.objects[obj.oid] = obj;
+  }
+
+  findObject(filterFunction) {
+    return Object.values(this.objects).find(filterFunction);
   }
 
   removeObject(obj) {

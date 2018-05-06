@@ -2,6 +2,7 @@ body {
   margin: 0;
   padding: 0;
   background: #333;
+  overflow: hidden;
 }
 
 .root {
@@ -9,15 +10,30 @@ body {
   width: 100%;
   top: 0;
   bottom: 0;
-  display: flex;
-
 }
 
 .app {
   width: 100%;
+  position: relative;
+}
+
+.ratio {
+  padding-bottom: 75%;
+}
+
+.canvas-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+
   display: flex;
 }
 
 canvas {
+  margin: 1em;
   width: 100%;
+  border: 1px solid white;
 }

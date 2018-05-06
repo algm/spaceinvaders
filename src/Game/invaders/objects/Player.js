@@ -2,7 +2,6 @@ import GameObject from "./GameObject";
 import Sprite from "./Sprite";
 import InputHandler from "./InputHandler";
 import Bullet from './Bullet';
-import throttle from 'lodash.throttle';
 
 export default class Player extends GameObject {
   constructor(game, screen, settings = {}) {
@@ -30,14 +29,7 @@ export default class Player extends GameObject {
     );
 
     this.input = new InputHandler();
-
-    this.fire = throttle(() => {
-      this.game.addObject(new Bullet(this.game, screen, {
-        x: this.settings.x + 2.78,
-        y: this.settings.y - 1.8,
-        velocity: 1
-      }, "up"));
-    }, 1500);
+    this.bullet = null;
   }
 
   onUpdate() {
@@ -55,6 +47,17 @@ export default class Player extends GameObject {
     if (this.input.isPressed(32)) {
       // Space
       this.fire();
+    }
+  }
+
+  fire() {
+    if (!this.bullet) {
+      this.bullet = new Bullet(this.game, this.screen, { x: this.settings.x + 2.78, y: this.settings.y - 1.8, velocity: 1 }, "up");
+      this.game.addObject(this.bullet);
+
+      this.bullet.onDestroy(() => {
+        this.bullet = null;
+      });
     }
   }
 }
