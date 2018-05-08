@@ -1,0 +1,60 @@
+* {
+  box-sizing: content-box;
+}
+
+#root, html, body {
+  height: 100%;
+  margin: 0;
+  background: #333;
+}
+
+#root {
+   height: 100%;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.root {
+  width: 100%;
+  max-width: 960px;
+  /*position: absolute;
+  top: 0;
+  bottom: 0;*/
+
+  .app {
+    padding: 1em;
+    position: relative;
+
+    .canvas-container {
+      height: 0;
+      overflow: hidden;
+      padding-top: 300px / 320px * 100%;
+      position: relative;
+      border: 1px solid white;
+
+      .container-inner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+
+        .flexbox-centering {
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+
+          canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          }
+        }
+      }
+    }
+  }
+}

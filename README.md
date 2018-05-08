@@ -1,3 +1,3 @@
-# Space invaders
+# Space Invaders
 
-A simplified version of Space Invaders implemented in JavaScript using canvas.
+Dead simple space invaders implementation

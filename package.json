@@ -1,32 +1,26 @@
 {
   "name": "spaceinvaders",
-  "devDependencies": {
-    "apache-server-configs": "^2.7.1",
-    "grunt": "^0.4.5",
-    "grunt-autoprefixer": "^1.0.0",
-    "grunt-concurrent": "^0.5.0",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-contrib-concat": "^0.5.0",
-    "grunt-contrib-connect": "^0.8.0",
-    "grunt-contrib-copy": "^0.5.0",
-    "grunt-contrib-cssmin": "^0.10.0",
-    "grunt-contrib-htmlmin": "^0.3.0",
-    "grunt-contrib-imagemin": "^0.8.0",
-    "grunt-contrib-jshint": "^0.10.0",
-    "grunt-contrib-uglify": "^0.5.1",
-    "grunt-contrib-watch": "^0.6.1",
-    "grunt-mocha": "^0.4.10",
-    "grunt-modernizr": "^0.5.2",
-    "grunt-newer": "^0.7.0",
-    "grunt-rev": "^0.1.0",
-    "grunt-svgmin": "^0.4.0",
-    "grunt-usemin": "^2.3.0",
-    "grunt-wiredep": "^1.7.0",
-    "jshint-stylish": "^0.4.0",
-    "load-grunt-tasks": "^0.4.0",
-    "time-grunt": "^0.4.0"
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "audio-loader": "^1.0.3",
+    "audio-play": "^2.2.0",
+    "raf": "^3.4.0",
+    "react": "^16.3.2",
+    "react-dom": "^16.3.2",
+    "react-scripts": "1.1.4",
+    "uniqueid": "^1.0.0"
   },
-  "engines": {
-    "node": ">=0.10.0"
+  "scripts": {
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "node-sass": "^4.9.0",
+    "react-app-rewire-sass-modules": "^1.1.5",
+    "react-app-rewired": "^1.5.2",
+    "sass-loader": "^7.0.1"
   }
 }
