@@ -30,6 +30,10 @@ export default class Player extends GameObject {
 
     this.input = new InputHandler();
     this.bullet = null;
+
+    this.onDestroy(() => {
+      this.game.play('explosion');
+    });
   }
 
   onUpdate() {
@@ -54,6 +58,7 @@ export default class Player extends GameObject {
     if (!this.bullet) {
       this.bullet = new Bullet(this.game, this.screen, { x: this.settings.x + 2.78, y: this.settings.y - 1.8, velocity: 1 }, "up");
       this.game.addObject(this.bullet);
+      this.game.play('playershoot');
 
       this.bullet.onDestroy(() => {
         this.bullet = null;

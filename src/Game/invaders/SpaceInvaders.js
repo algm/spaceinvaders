@@ -1,6 +1,7 @@
 import Screen from './Screen';
 import Player from './objects/Player';
 import Invaders from './Invaders';
+import sound from './sound';
 
 export default class SpaceInvaders {
   constructor(canvas) {
@@ -12,7 +13,9 @@ export default class SpaceInvaders {
     this.initialize();
   }
 
-  initialize() {
+  async initialize() {
+    await sound.initialize();
+
     this.player = new Player(this, this.screen);
     this.addObject(this.player);
 
@@ -36,6 +39,10 @@ export default class SpaceInvaders {
     const id = obj.oid;
 
     delete this.objects[id];
+  }
+
+  play(key) {
+    sound.play(key);
   }
 
   render() {

@@ -60,11 +60,11 @@ export default class Invaders {
   }
 
   onDestroy(invader) {
-    console.log("invader destroyed!");
     this.collection = this.collection.filter((item) => {
       return item !== invader;
     });
 
+    this.game.play('invaderkilled');
     this.count--;
     this.buildIndex();
   }
