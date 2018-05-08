@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import './App.css';
+import './App.scss';
 import Game from './Game/Game';
 
 class App extends Component {
@@ -7,9 +7,12 @@ class App extends Component {
     return (
       <div className="root">
         <div className="app">
-          <div className="ratio"></div>
           <div className="canvas-container">
-            <Game />
+            <div className="container-inner">
+              <div className="flexbox-centering">
+                <Game />
+              </div>
+            </div>
           </div>
         </div>
       </div>

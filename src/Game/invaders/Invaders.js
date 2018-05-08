@@ -11,12 +11,21 @@ export default class Invaders {
     this.currentDirection = "right";
     this.speed = 0.05;
     this.index = {};
+    this.stopped = false;
 
     this.initialize();
   }
 
   initialize() {
     this.addInvadersToGame();
+  }
+
+  stop() {
+    this.stopped = true;
+  }
+
+  start() {
+    this.stopped = false;
   }
 
   addInvadersToGame() {
@@ -65,6 +74,7 @@ export default class Invaders {
     });
 
     this.game.play('invaderkilled');
+    this.game.score += Math.round(invader.points * (this.speed / 0.05));
     this.count--;
     this.buildIndex();
   }
@@ -112,6 +122,8 @@ export default class Invaders {
     for (let invader of this.collection) {
       invader.moveDown();
     }
+
+    this.speed += 0.0205;
   }
 
   fire() {
@@ -121,9 +133,11 @@ export default class Invaders {
   }
 
   update() {
-    this.checkCollisions();
+    if (!this.stopped) {
+      this.checkCollisions();
 
-    this.move();
-    this.fire();
+      this.move();
+      this.fire();
+    }
   }
 }

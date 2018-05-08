@@ -65,6 +65,12 @@ const sizes = {
   }
 };
 
+const points = {
+  top: 300,
+  middle: 200,
+  bottom: 100
+};
+
 const widthPct = 6.285714285714286;
 const heightPct = 5.333333333333334;
 const spacingX = 0.8;
@@ -81,6 +87,7 @@ export default class Invader extends GameObject {
       velocity: 0.8
     });
 
+    this.points = points[sprite];
     this.col = offsetX;
     this.row = offsetY;
     this.bullet = null;
@@ -93,7 +100,7 @@ export default class Invader extends GameObject {
 
   fire() {
     let offsetY = (this.getHeight() + 3) * 100 / this.screen.height;
-    let offsetX = ((this.getWidth() + 3) * 100 / this.screen.width) / 2;
+    let offsetX = (this.getWidth() + 3) * 100 / this.screen.width / 2;
 
     if (!this.hasInvaderBelow() && !this.bullet) {
       if (Math.random() >= 0.998) {
@@ -116,7 +123,19 @@ export default class Invader extends GameObject {
     }
   }
 
+  checkTargets() {
+    let found = this.game.findObject(obj => {
+      return this.isCollidingWith(obj);
+    });
+
+    if (found) {
+      found.destroy();
+    }
+  }
+
   onUpdate(callback) {
+    this.checkTargets();
+
     if (typeof callback === "function") {
       callback(this);
     }

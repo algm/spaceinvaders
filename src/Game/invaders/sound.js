@@ -15,6 +15,8 @@ let playableSounds = {};
 export default {
   async initialize() {
     playableSounds = await load(sounds);
+
+    return this;
   },
 
   play(key) {

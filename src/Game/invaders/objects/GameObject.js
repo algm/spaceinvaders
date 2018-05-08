@@ -13,7 +13,7 @@ function getHeightWithProportions(objectHeight, screenHeight) {
 }
 
 function computePositionFromPct(positionPct, size) {
-  return Math.floor(positionPct * size / 100);
+  return positionPct * size / 100;
 }
 
 const uq = uniqueid("obj-");

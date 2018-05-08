@@ -6,23 +6,32 @@ export default class Screen {
     this.width = canvas.width = canvas.clientWidth;
     this.height = canvas.height = canvas.clientHeight;
     this.animation = null;
+    this.stopped = false;
   }
 
   clock(callback) {
-    let animationCallback = () => {
-      this.clear();
-      callback.call(this);
+    if (!this.animation) {
+      let animationCallback = () => {
+        if (!this.stopped) {
+          this.clear();
+          callback.call(this);
 
-      raf(animationCallback);
-    };
+          return raf(animationCallback);
+        }
+      };
 
-    this.animation = raf(animationCallback);
+      this.animation = raf(animationCallback);
+    }
+
+    this.stopped = false;
 
     return this.animation;
   }
 
   stop() {
-    this.animation.stop();
+    raf.cancel(this.animation);
+    this.animation = null;
+    this.stopped = true;
 
     return this;
   }
